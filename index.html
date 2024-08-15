@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咸鱼分析 - Gudupao Spark Studio</title>
+    <link rel="icon" type="image/x-ico" href="./img/logo.png" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('./img/beijing-1.png') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #logo {
+            position: absolute;
+            top: 2px;
+            left: 10px;
+            width: auto;
+            height: 120px;
+            -webkit-backdrop-filter: blur(5px);
+            /* 兼容 Firefox 与 Safari */
+            backdrop-filter: blur(5px);
+            /* Adjust the blur amount as needed */
+            background-color: rgba(255, 255, 255, 0.5);
+            /* Adjust opacity as needed */
+            border-radius: 10px;
+            /* Optional: Add rounded corners */
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            /* Optional: Add a subtle shadow */
+            display: flex;
+            border-radius: 10px;
+        }
+
+        /* 如果你在不开心的时候看到这句话，你可以向gudupaostudio@outlook.com发送邮件来倾诉，我们会尽可能的回信并且给予安慰，
+  记住哦，你很棒，每个人都是有价值的有特长的，从来就不存在无用的人，加油努力的活下去！！！开心点哦～陌生人～你笑起来一定很好看！！！ */
+        .frosted-glass {
+            text-align: left;
+            padding: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 100%;
+            box-sizing: border-box;
+            -webkit-backdrop-filter: blur(10px);
+            /* 兼容 Firefox 与 Safari */
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-input-label,
+        #submit-button {
+            width: 200px;
+            padding: 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .file-input-label {
+            width: 200px;
+            padding: 15px;
+            background-image: linear-gradient( 135deg, #FEB692 10%, #EA5455 100%);
+            color: #fff;
+            border: 2px solid #fff;
+        }
+
+        .file-input-label:hover {
+            transform: scale(1.05);
+        }
+
+        #submit-button {
+            width: 200px;
+            padding: 15px;
+            background-image: linear-gradient( 135deg, #FEB692 10%, #EA5455 100%);
+            color: #fff;
+            border: 2px solid #fff;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        #submit-button:hover {
+            background-image: linear-gradient( 135deg, #FEB692 10%, #EA5455 100%);
+            transform: scale(1.05);
+        }
+
+        .copyright {
+            position: fixed;
+            bottom: 10px;
+            color: #fff;
+        }
+
+        .sfa-logo {
+            width: 150px;
+            height: 150px;
+            margin-top: -13px;
+        }
+
+        #analyze-result {
+            opacity: 0; 
+            visibility: hidden; 
+            transition: ease-in-out;
+            transition-duration: 1s;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="logo">
+        <img src="./img/gudupao.png" alt="Gudupao Spark Studio" style="border-radius: 10px;">
+        <img src="./img/logo_with_text.png" alt="咸鱼程序分析" class="sfa-logo">
+    </div>
+    <div class="frosted-glass">
+        <label for="file-input" class="file-input-label">选择文件</label>
+        <input type="file" id="file-input" onchange="handleSelect()" multiple>
+        <p id="selected-files">未选择文件。</p>
+        <p id="status"></p>
+        <p id="analyze-result"></p>
+        <a id="solution-link" class="file-input-label" style="opacity: 0; visibility: hidden;">查看解决教程</a>
+    </div>
+
+    <div class="copyright">
+        <p>&copy; 2024 Gudupao Spark Studio. All rights reserved.</p>
+    </div>
+
+    <script>
+        function handleSelect() {
+            const fileList = document.getElementById('file-input').files;
+            if (fileList.length === 0) {
+                document.getElementById('selected-files').innerText = "未选择文件。";
+                return;
+            }
+             document.getElementById('selected-files').innerText = `已选择 ${fileList.length} 个文件。`;
+            document.getElementById('status').innerText = "准备中...";
+             document.getElementById("analyze-result").style.visibility = 'hidden';
+            document.getElementById("analyze-result").style.opacity = 0;
+            handleSubmit();
+        }
+        function readAll(files) {
+            var fileContents = [];
+            var promises = [];
+
+            // 循环遍历所有文件，并为每个文件创建一个 Promise 对象
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const promise = new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+
+                    reader.onload = function (event) {
+                        fileContents.push(reader.result);
+                        resolve();
+                    };
+
+                    reader.onerror = function (error) {
+                        // 永远不要相信用户的磁盘，读取失败就跳过，小问题
+                        console.error('读取文件时发生错误：' + error.message + "（" + file.name + "）");
+                        resolve();
+                    };
+
+                    // 读取文件内容
+                    reader.readAsText(file);
+                });
+
+                promises.push(promise);
+            }
+
+            // 使用 Promise.all 等待所有文件读取完成，并将结果保存到一个数组中
+            return Promise.all(promises).then(() => {
+                return fileContents
+            }).catch((error) => {
+                console.error('读取文件时发生错误：', error);
+                return [];
+            });
+        }
+        function handleSubmit() {
+            var files = document.getElementById('file-input').files;
+
+            if (!files) {
+                alert("请选择文件");
+                return false;
+            }
+
+            document.getElementById('status').innerText = "读取中...";
+            readAll(files).then((contents) => {
+                    console.log(contents);
+                    if (!contents) {
+                        alert("所有文件均读取失败，没有可用于分析的文件！");
+                        return false;
+                    }
+                    uploadLength = contents.reduce((sum, str) => sum + str.length, 0);
+                    if (uploadLength >= 20E+6) {
+                        alert("文件大小过大（" + (uploadLength / 1E+6) + " MB），无法上传！");
+                        return false;
+                    }
+                    if (uploadLength >= 100E+3) {
+                        var result = confirm("即将上传 " + uploadLength / 1E+3 + " KB 的文件，是否继续？");
+                        if (!result) {
+                             document.getElementById('status').innerText = "上传被取消！";
+                            return false;
+                        }
+                    }
+                    document.getElementById('selected-files').innerText += `，，大小 ${uploadLength / 1E+3} KB。`
+                    document.getElementById('selected-files').innerText = 
+                    document.getElementById('selected-files').innerText.replace("。，", "");
+        
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'http://127.0.0.1:8000/api/v1/analyze', true);
+
+                    document.getElementById('status').innerText = "上传中...";
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            var progress = Math.round((e.loaded / e.total) * 100);
+                            document.getElementById('status').innerText = "上传中... " + progress + '%';
+                            if (progress === 100) {
+                                document.getElementById('status').innerText = "分析中...";
+                            }
+                        }
+                    };
+                    xhr.onload = function () {
+                        if (xhr.status != 200) {
+                            console.error('响应出错：' + xhr.status + ' ' + xhr.statusText);
+                            return false;
+                        }
+                        var responseData = JSON.parse(xhr.responseText);
+                        finishAnalyze(responseData);
+                        return true;
+                        // TODO：修复大文件造成严重卡顿的问题
+                    };
+                    xhr.onerror = function () {
+                        console.error('请求发送失败');
+                        alert("请求发送失败，请检查网络连接，或在 QQ 群中反馈情况");
+                        return false;
+                    };
+        
+                    var packetData = {
+                        log: contents
+                    };
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(JSON.stringify(packetData));
+                }
+            );
+        }
+        function finishAnalyze(responseData) {
+            console.log('服务器响应：', responseData);
+            document.getElementById('status').innerText = "分析完成！";
+            if (responseData["status"] === "error") {
+                document.getElementById("analyze-result").innerText = "错误：" + responseData["message"];
+                document.getElementById("analyze-result").style.visibility = 'visible';
+                document.getElementById("analyze-result").style.opacity = 1;
+                return;
+            }
+            document.getElementById("analyze-result").innerText = `错误原因：${responseData["reason"]["description"]}（${responseData["reason"]["name"]}）
+            \n解决方案：${responseData["solution"]["overview"]}`;
+            document.getElementById("analyze-result").style.visibility = 'visible';
+            document.getElementById("analyze-result").style.opacity = 1;
+          if (responseData["solution"]["link"]) {
+               document.getElementById("solution-link").src = responseData["solution"]["link"]
+           document.getElementById("solution-link").style.visibility = 'visible';
+            document.getElementById("solution-link").style.opacity = 1;
+        }
+        }
+   </script>
+</body>
+</html>
